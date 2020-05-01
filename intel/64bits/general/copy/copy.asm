@@ -39,11 +39,12 @@ ScanOne:
     inc rbx
     cmp rbx, [ArgCount]
     jb ScanOne
-;   Display all arguments to stdout:
-    xor r9, r9
 ;;
 ;; TODO: Copy code to go here
 ;;
+
+;   Display all arguments to stdout:
+    xor r9, r9
 Showem:
     mov rsi, [ArgPtrs+r9*8]
     mov rax, 1
