@@ -6,6 +6,8 @@ ArgLens:   resq    MAXARGS
     section .data
 ErrMsg: db  "Terminated with error.",0x0a ; Error message + New Line 
 ERRLEN  equ $-ErrMsg
+BUFFER equ  1024
+FILED1  dq  0
     section .text
     global  _start
 _start:
@@ -41,6 +43,22 @@ ScanOne:
     jb ScanOne
 ;;
 ;; TODO: Copy code to go here
+;;
+;; OpenFiles:
+    
+    
+;; CopyChar:
+;;    TODO: Make a loop here
+    mov rax, 2
+    mov rdi, qword [ArgPtrs]    ; Load path to file 1
+    mov rsi, 0  ; Flags for open, in this case Read-Only 
+;;
+    mov qword [FILED1], rax ; save file descriptor's value
+    mov rax, 1
+    mov rdi, 1
+    lea rsi, qword [FILED1]
+    mov rdx, 8
+    syscall
 ;;
 
 ;   Display all arguments to stdout:
