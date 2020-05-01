@@ -8,6 +8,7 @@ ErrMsg: db  "Terminated with error.",0x0a ; Error message + New Line
 ERRLEN  equ $-ErrMsg
 BUFFER equ  1024
 FILED1  dq  0
+F1:  db  "something.txt",0
     section .text
     global  _start
 _start:
@@ -28,20 +29,22 @@ SaveArgs:
     xor rax, rax
     xor rbx, rbx
 
-ScanOne:
-    mov rcx, 0000ffffh      ; Limit search to 65535 bytes max
-    mov rdi, qword [ArgPtrs+rbx*8]  ; Put address of string to search in RDI
-    mov rdx, rdi            ; Copy starting address into RDX
-    cld     ; Set search direction to iup-memory
-    repne scasb     ; Search fo null (0 char= in string
-    jnz Error
-    mov byte [rdi-1], 0x0a     ; Sore an EOL where the null used to be
-    sub rdi, rdx
-    mov qword [ArgLens+rbx*8], rdi
-    inc rbx
-    cmp rbx, [ArgCount]
-    jb ScanOne
+;; This block although useful in other cases, replaces the null with \n
+;; ScanOne:
+;;     mov rcx, 0000ffffh      ; Limit search to 65535 bytes max
+;;     mov rdi, qword [ArgPtrs+rbx*8]  ; Put address of string to search in RDI
+;;     mov rdx, rdi            ; Copy starting address into RDX
+;;     cld     ; Set search direction to up-memory
+;;     repne scasb     ; Search fo null (0 char= in string
+;;     jnz Error
+;;     mov byte [rdi-1], 0x0a     ; Store an EOL where the null used to be
+;;     sub rdi, rdx
+;;     mov qword [ArgLens+rbx*8], rdi
+;;     inc rbx
+;;     cmp rbx, [ArgCount]
+;;     jb ScanOne
 ;;
+
 ;; TODO: Copy code to go here
 ;;
 ;; OpenFiles:
@@ -49,30 +52,43 @@ ScanOne:
     
 ;; CopyChar:
 ;;    TODO: Make a loop here
+    ;; TODO: Not getting the FDs right
     mov rax, 2
-    mov rdi, qword [ArgPtrs]    ; Load path to file 1
+    mov rdi, qword [ArgPtrs + 8]    ; Load path to file 1, is this not null term?
+    ;; mov rdi, F1    ; Load path to file 1, this works
     mov rsi, 0  ; Flags for open, in this case Read-Only 
+    syscall
+    ;; cmp rax, 0 ; Show error if file descriptor is invalid 
+    ;; jl  Error
+
+    mov rax, 2
+    mov rdi, qword [ArgPtrs + 16]    ; Load path to file 1
+    mov rsi, 0x40  ; Flags for open, in this case Read-Only 
+    syscall
+    
 ;;
     mov qword [FILED1], rax ; save file descriptor's value
     mov rax, 1
     mov rdi, 1
-    lea rsi, qword [FILED1]
+    ;; lea rsi, qword [FILED1]
+    mov rsi, FILED1
     mov rdx, 8
     syscall
 ;;
 
 ;   Display all arguments to stdout:
-    xor r9, r9
-Showem:
-    mov rsi, [ArgPtrs+r9*8]
-    mov rax, 1
-    mov rdi, 1
-    mov rdx, [ArgLens+r9*8]
-    syscall
-    inc r9
-    cmp r9, [ArgCount]
-    jb Showem
-    jmp Exit
+;;     xor r9, r9
+;; 
+;; Showem:
+;;     mov rsi, [ArgPtrs+r9*8]
+;;     mov rax, 1
+;;     mov rdi, 1
+;;     mov rdx, [ArgLens+r9*8]
+;;     syscall
+;;     inc r9
+;;     cmp r9, [ArgCount]
+;;     jb Showem
+;;     jmp Exit
 
 Error:  mov rax, 1
         mov rdi, 1
