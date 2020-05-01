@@ -1,19 +1,20 @@
     section .bss
     MAXARGS equ     10
+    BUFFSIZE equ  1024
 ArgCount:   resq    1
-ArgPtrs:   resq     MAXARGS 
-ArgLens:   resq    MAXARGS
+ArgPtrs:    resq        MAXARGS 
+ArgLens:    resq        MAXARGS
+Buffer:     resb        BUFFSIZE 
     section .data
 ErrMsg: db  "Terminated with error.",0x0a ; Error message + New Line 
 ERRLEN  equ $-ErrMsg
-BUFFER equ  1024
-FILED1  dq  0
-F1:  db  "something.txt",0
+FD1  dq  0
+FD2  dq  0
+;; F1:  db  "something.txt",0
     section .text
     global  _start
 _start:
     nop         ; This no-op keeps gdb happy...
-
     pop rcx
     cmp rcx, MAXARGS
     ja  Error
@@ -28,7 +29,7 @@ SaveArgs:
 ; with the argument pointers sotred in ArgPtrs, we calculate their lengths:
     xor rax, rax
     xor rbx, rbx
-;; update comment
+
 ;; This block although useful in other cases, replaces the null with \n
 ;; ScanOne:
 ;;     mov rcx, 0000ffffh      ; Limit search to 65535 bytes max
@@ -47,34 +48,40 @@ SaveArgs:
 
 ;; TODO: Copy code to go here
 ;;
-;; OpenFiles:
-    
-    
-;; CopyChar:
-;;    TODO: Make a loop here
-    ;; TODO: Not getting the FDs right
+
+OpenFiles:
     mov rax, 2
     mov rdi, qword [ArgPtrs + 8]    ; Load path to file 1, is this not null term?
     ;; mov rdi, F1    ; Load path to file 1, this works
     mov rsi, 0  ; Flags for open, in this case Read-Only 
     syscall
-    ;; cmp rax, 0 ; Show error if file descriptor is invalid 
-    ;; jl  Error
+    mv qword [FD1], rax ; Save file descriptor
+    cmp rax, 0 ; Show error if file descriptor is invalid 
+    jl  Error
 
     mov rax, 2
+    ;; mov rdi, qword [ArgPtrs + 16]    ; Load path to file 1
     mov rdi, qword [ArgPtrs + 16]    ; Load path to file 1
     mov rsi, 0x40  ; Flags for open, in this case Read-Only 
+    mov rdx, 0644o ; Permissions in case of file-creation event
     syscall
-    
+    mv qword [FD2], rax     ; Save file descriptor
+    cmp rax, 0 ; Show error if file descriptor is invalid 
+    jl  Error
 ;;
-    mov qword [FILED1], rax ; save file descriptor's value
-    mov rax, 1
-    mov rdi, 1
-    ;; lea rsi, qword [FILED1]
-    mov rsi, FILED1
-    mov rdx, 8
-    syscall
+;; CopyChar:
+;;    TODO: Make a loop here
+
+;; DEBUGG CODE, TESTING FILE DESCRIPTORS
+    ;; mov qword [FILED1], rax ; save file descriptor's value
+    ;; mov rax, 1
+    ;; mov rdi, 1
+    ;; ;; lea rsi, qword [FILED1]
+    ;; mov rsi, FILED1
+    ;; mov rdx, 8
+    ;; syscall
 ;;
+    jmp Exit
 
 ;   Display all arguments to stdout:
 ;;     xor r9, r9
