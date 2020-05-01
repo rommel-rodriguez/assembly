@@ -6,11 +6,11 @@ ArgPtrs:    resq        MAXARGS
 ArgLens:    resq        MAXARGS
 Buffer:     resb        BUFFSIZE 
     section .data
+filea  dq  0
+fileb  dq  0
+NumBytes    dq 0
 ErrMsg: db  "Terminated with error.",0x0a ; Error message + New Line 
 ERRLEN  equ $-ErrMsg
-FD1  dq  0
-FD2  dq  0
-;; F1:  db  "something.txt",0
     section .text
     global  _start
 _start:
@@ -46,41 +46,63 @@ SaveArgs:
 ;;     jb ScanOne
 ;;
 
-;; TODO: Copy code to go here
-;;
 
-OpenFiles:
+;; OpenFiles:
     mov rax, 2
     mov rdi, qword [ArgPtrs + 8]    ; Load path to file 1, is this not null term?
-    ;; mov rdi, F1    ; Load path to file 1, this works
     mov rsi, 0  ; Flags for open, in this case Read-Only 
     syscall
-    mv qword [FD1], rax ; Save file descriptor
+    mov qword [filea], rax ;; Save file descriptor
     cmp rax, 0 ; Show error if file descriptor is invalid 
     jl  Error
 
     mov rax, 2
     ;; mov rdi, qword [ArgPtrs + 16]    ; Load path to file 1
     mov rdi, qword [ArgPtrs + 16]    ; Load path to file 1
-    mov rsi, 0x40  ; Flags for open, in this case Read-Only 
+    mov rsi, 0x40 | 0x2  ; Flags for open, create if neeed + write and read perms
     mov rdx, 0644o ; Permissions in case of file-creation event
     syscall
-    mv qword [FD2], rax     ; Save file descriptor
+    mov qword [fileb], rax     ; Save file descriptor
     cmp rax, 0 ; Show error if file descriptor is invalid 
     jl  Error
 ;;
-;; CopyChar:
-;;    TODO: Make a loop here
-
-;; DEBUGG CODE, TESTING FILE DESCRIPTORS
-    ;; mov qword [FILED1], rax ; save file descriptor's value
+;; DEBUGG CODE, TESTING file DESCRIPTORS
+    ;; ;; mov qword [filea], rax ; save file descriptor's value
     ;; mov rax, 1
     ;; mov rdi, 1
-    ;; ;; lea rsi, qword [FILED1]
-    ;; mov rsi, FILED1
+    ;; ;; lea rsi, qword [filea]
+    ;; mov rsi, fileb
     ;; mov rdx, 8
     ;; syscall
 ;;
+CopyBuffer:
+    ;; Read
+    mov rax, 0
+    mov rdi, qword [filea]
+    mov rsi, Buffer
+    mov rdx, BUFFSIZE
+    syscall
+    mov qword [NumBytes], rax ; Save number of bytes read 
+    ;; Write
+    mov rax, 1
+    mov rdi, qword [fileb]
+    ;; mov rsi, Buffer ; Already set
+    mov rdx, qword [NumBytes]
+    syscall
+    mov rax, qword [NumBytes]
+    cmp rax, BUFFSIZE
+    jl  CloseFiles 
+    jmp CopyBuffer
+
+CloseFiles:
+    mov rax, 3
+    mov rdi, qword [filea]
+    syscall
+    mov rax, 3
+    mov rdi, qword [fileb]
+    syscall
+    jmp Exit
+
     jmp Exit
 
 ;   Display all arguments to stdout:
