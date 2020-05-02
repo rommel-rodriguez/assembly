@@ -1,5 +1,0 @@
-#!/bin/bash
-file=$1
-name=${file%.*} # Removes extension
-yasm -f elf64 -g dwarf2 "${file}" && ld -o ${name} "${name}.o"
-# yasm -f elf64 -g dwarf2 copy2.asm && ld -o copy2 copy.o
