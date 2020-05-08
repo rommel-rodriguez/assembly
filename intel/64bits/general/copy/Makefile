@@ -22,3 +22,8 @@ git:
 	git add -u
 	git commit -m "$m"
 	git push --set-upstream formal master
+
+.asm:
+
+%:	%.asm
+	$(AS) $(ASFLAGS) $^
