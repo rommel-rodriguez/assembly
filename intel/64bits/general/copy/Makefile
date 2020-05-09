@@ -22,8 +22,10 @@ git:
 	git add -u
 	git commit -m "$m"
 	git push --set-upstream formal master
+clean:
+	rm -f *.o
 
 .asm:
 
-%:	%.asm
-	$(AS) $(ASFLAGS) $^
+%.o: %.asm
+	$(AS) $(ASFLAGS) -o $@ $<
